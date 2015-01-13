@@ -9,11 +9,12 @@ App that creates folders on disk from inside of Shotgun.
 from tank.platform import Application
 import tank
 from tank.platform.qt import QtGui, QtCore
-import sys, os
+import sys, os, shutil
 
 class RegisterVersion(tank.platform.Application):
-    
+
     def init_app(self):
+
         deny_permissions = self.get_setting("deny_permissions")
         deny_platforms = self.get_setting("deny_platforms")
         self.tk = self.engine._TankBundle__tk
@@ -26,21 +27,9 @@ class RegisterVersion(tank.platform.Application):
         else:
             self.asset_name = self.ctx.entity["name"]
         self.asset = self.ctx.entity["name"]
-#         self.asset_name = self.ctx.entity["name"]
         self.asset_type = self.tk.shotgun.find_one("Asset", filters = [["code", "is", self.asset]], fields= ["sg_asset_type"])["sg_asset_type"]
         self.task = self.ctx.task["name"]
         self.template_path = self.engine.get_template_by_name("review_version_path")
-        
-        self.fields = {}
-        self.fields["Asset"] = self.asset
-        self.fields["sg_asset_type"] = self.asset_type
-        self.fields["Step"] = self.task
-        self.fields["name"] = self.asset_name
-        self.fields["version"] = 0
-        self.fields["ext"] = "mov"
-        
-        self.path = self.template_path.apply_fields(self.fields)
-        self.verDir = self.check_existing_version(self.path) 
 
         p = {
             "title": "Register Version",
@@ -51,32 +40,73 @@ class RegisterVersion(tank.platform.Application):
 
         self.engine.register_command("register_version", self.register_version, p)
 
-    def check_existing_version(self, path):
-        self.version_dir = path.split(self.asset_name)[0]
-        if os.path.exists(self.version_dir):
-            files = os.listdir(self.version_dir)
+    def register_version(self):
+        self.win = Window()
+        self.win.project_field.setText(str(self.project_name))
+        self.win.asset_type_field.setText(str(self.asset_type))
+        self.win.asset_field.setText(str(self.asset))
+        self.win.task_field.setText(str(self.task))
+        self.win.loadfile_button.released.connect(self.load_file)
+        self.win.publishfile_button.released.connect(self.publish_version)
+        self.win.show()
+        self.win.exec_()
+
+    def load_file(self):
+        self.fileDialog = QtGui.QFileDialog.getOpenFileName(self.win, 'Publish File','/home')
+        self.ext = os.path.splitext(self.fileDialog[0])[1]
+        self.win.src_file_field.setText(str(self.fileDialog[0]))
+        self.fields = {}
+        self.fields["Asset"] = self.asset
+        self.fields["sg_asset_type"] = self.asset_type
+        self.fields["Step"] = self.task
+        self.fields["name"] = self.asset_name
+        self.fields["version"] = 1
+        self.fields['ext'] = self.ext.split('.')[1]
+        self.path = self.template_path.apply_fields(self.fields)
+        self.baseName = os.path.basename(self.path)
+        self.file_path = self.path.split(self.baseName)[0]
+        list_files = self.listFilesWithParticularExtensions(self.file_path, self.asset_name, self.ext)
+        if list_files:
+            latest_file = max(list_files)
+#             self.version = int(latest_file.split(self.ext)[0].split('.v')[1])
+            self.fields = {}
+            self.fields["Asset"] = self.asset
+            self.fields["sg_asset_type"] = self.asset_type
+            self.fields["Step"] = self.task
+            self.fields["name"] = self.asset_name
+            self.fields['version'] = int(latest_file.split(self.ext)[0].split('.v')[1]) + 1
+            self.fields['ext'] = self.ext.split('.')[1]
+            self.path = self.template_path.apply_fields(self.fields)
+            self.win.version_field.setText(str(self.fields['version']))
+            self.win.trg_file_field.setText(str(self.path))
+        else:
+            self.fields = {}
+            self.fields["Asset"] = self.asset
+            self.fields["sg_asset_type"] = self.asset_type
+            self.fields["Step"] = self.task
+            self.fields["name"] = self.asset_name
+            self.fields['version'] = 0 + 1
+            self.fields['ext'] = self.ext.split('.')[1]
+            self.path = self.template_path.apply_fields(self.fields)
+            self.win.version_field.setText(str(self.fields['version']))
+            self.win.trg_file_field.setText(str(self.path))
+
+
+    def listFilesWithParticularExtensions(self, file_path, file_prefix, ext):
+        files = [ f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path,f)) and f.startswith('%s_' % file_prefix) and f.endswith(ext) and f.__contains__('.v0')]
+        if files:
             return files
         else:
-            app = QtGui.QApplication(sys.argv)
-            error_message = QtGui.QMessageBox()
-            if error_message.question(None, "", "%s path doesn't exists on the disk" % self.version_dir, error_message.Ok) == error_message.Ok:
-                app.quit()
-                sys.exit(app.exec_())
-
-    def register_version(self):
-        
-        win = Window()
-        win.project_field.setText(str(self.project_name))
-        win.asset_type_field.setText(str(self.asset_type))
-        win.asset_field.setText(str(self.asset))
-        win.task_field.setText(str(self.task))
-        win.trg_file_field.setText(str(self.verDir))
-        win.show()
-        win.exec_()
+            return False
+    
+    def publish_version(self):
+        sourcePath = self.win.src_file_field.toPlainText()
+        destPath = self.win.trg_file_field.toPlainText()
+        shutil.copyfile(sourcePath, destPath)
 
 class Window(QtGui.QDialog):
 
-    def __init__(self, parent=None, *args, **kwargs):
+    def __init__(self, parent=None):
         super(Window, self).__init__(parent)
         
         #Custom code here
@@ -121,11 +151,10 @@ class Window(QtGui.QDialog):
         self.src_file_field.setMaximumSize(5000, 25)
         self.src_file_field.setEnabled(False)
 
-        loadfile_button = QtGui.QPushButton("Load File")
-        loadfile_button.released.connect(self.load_file)
+        self.loadfile_button = QtGui.QPushButton("Load File")
 
-        publishfile_button = QtGui.QPushButton("Version+")
-        publishfile_button.released.connect(self.publish_file)
+        self.publishfile_button = QtGui.QPushButton("Version+")
+        self.publishfile_button.released.connect(self.publish_file)
         
         #adding widgets
         Layout_01.addWidget(project_txt, 0, 0)
@@ -149,14 +178,10 @@ class Window(QtGui.QDialog):
         Layout_01.addWidget(src_file_txt, 6 , 0)
         Layout_01.addWidget(self.src_file_field, 6 , 1)
         
-        Layout_02.addWidget(loadfile_button, 1 ,0)
-        Layout_02.addWidget(publishfile_button, 1 ,1)
+        Layout_02.addWidget(self.loadfile_button, 1 ,0)
+        Layout_02.addWidget(self.publishfile_button, 1 ,1)
         
         self.setWindowTitle("Register Versions on shotgun")
-        
-    def load_file(self):
-        self.fileDialog = QtGui.QFileDialog.getOpenFileName(self, 'Publish File','/home')
-        self.src_file_field.setText(self.fileDialog)
     
     def publish_file(self):
         print "publishing File"
