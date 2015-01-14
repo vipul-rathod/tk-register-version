@@ -91,7 +91,6 @@ class RegisterVersion(tank.platform.Application):
             self.win.version_field.setText(str(self.fields['version']))
             self.win.trg_file_field.setText(str(self.path))
 
-
     def listFilesWithParticularExtensions(self, file_path, file_prefix, ext):
         files = [ f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path,f)) and f.startswith('%s_' % file_prefix) and f.endswith(ext) and f.__contains__('.v0')]
         if files:
@@ -100,9 +99,23 @@ class RegisterVersion(tank.platform.Application):
             return False
     
     def publish_version(self):
-        sourcePath = self.win.src_file_field.toPlainText()
-        destPath = self.win.trg_file_field.toPlainText()
-        shutil.copyfile(sourcePath, destPath)
+        source_path = self.win.src_file_field.toPlainText()
+        dest_path = self.win.trg_file_field.toPlainText()
+        if source_path:
+            shutil.copyfile(source_path, dest_path)
+            data = { 'project': self.ctx.project,
+                 'code':  os.path.basename(dest_path),
+                 'description': 'Playblast published',
+                 'sg_path_to_movie': dest_path,
+                 'sg_status_list': '',
+                 'entity': self.ctx.entity,
+                 'sg_task': self.ctx.task,
+                 'user': self.ctx.user}
+            create_version = self.tk.shotgun.create('Version', data)
+            upload_version = self.tk.shotgun.upload('Version', create_version['id'], dest_path, 'sg_uploaded_movie')
+            QtGui.QMessageBox.information(self.win, 'Version registered', 'Version created and uploaded on shotgun', QtGui.QMessageBox.Ok)
+        else:
+            QtGui.QMessageBox.warning(self.win, 'Warning', 'No Input given for uploading.\nLoad file first to version up', QtGui.QMessageBox.Ok)
 
 class Window(QtGui.QDialog):
 
