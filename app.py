@@ -29,6 +29,8 @@ class RegisterVersion(tank.platform.Application):
         self.asset = self.ctx.entity["name"]
         self.asset_type = self.tk.shotgun.find_one("Asset", filters = [["code", "is", self.asset]], fields= ["sg_asset_type"])["sg_asset_type"]
         self.task = self.ctx.task["name"]
+        self.step = self.ctx.step["name"]
+        self.step_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['short_name'])['short_name']
         self.template_path = self.engine.get_template_by_name("review_version_path")
 
         p = {
@@ -45,7 +47,7 @@ class RegisterVersion(tank.platform.Application):
         self.win.project_field.setText(str(self.project_name))
         self.win.asset_type_field.setText(str(self.asset_type))
         self.win.asset_field.setText(str(self.asset))
-        self.win.task_field.setText(str(self.task))
+        self.win.task_field.setText(str(self.step_name))
         self.win.loadfile_button.released.connect(self.load_file)
         self.win.publishfile_button.released.connect(self.publish_version)
         self.win.show()
@@ -58,13 +60,17 @@ class RegisterVersion(tank.platform.Application):
         self.fields = {}
         self.fields["Asset"] = self.asset
         self.fields["sg_asset_type"] = self.asset_type
-        self.fields["Step"] = self.task
+        self.fields["Step"] = self.step_name
         self.fields["name"] = self.asset_name
         self.fields["version"] = 1
         self.fields['ext'] = self.ext.split('.')[1]
         self.path = self.template_path.apply_fields(self.fields)
         self.baseName = os.path.basename(self.path)
         self.file_path = self.path.split(self.baseName)[0]
+        if os.path.exists(self.file_path):
+            pass
+        else:
+            os.makedirs(self.file_path)
         list_files = self.listFilesWithParticularExtensions(self.file_path, self.asset_name, self.ext)
         if list_files:
             latest_file = max(list_files)
@@ -72,7 +78,7 @@ class RegisterVersion(tank.platform.Application):
             self.fields = {}
             self.fields["Asset"] = self.asset
             self.fields["sg_asset_type"] = self.asset_type
-            self.fields["Step"] = self.task
+            self.fields["Step"] = self.step_name
             self.fields["name"] = self.asset_name
             self.fields['version'] = int(latest_file.split(self.ext)[0].split('.v')[1]) + 1
             self.fields['ext'] = self.ext.split('.')[1]
@@ -83,7 +89,7 @@ class RegisterVersion(tank.platform.Application):
             self.fields = {}
             self.fields["Asset"] = self.asset
             self.fields["sg_asset_type"] = self.asset_type
-            self.fields["Step"] = self.task
+            self.fields["Step"] = self.step_name
             self.fields["name"] = self.asset_name
             self.fields['version'] = 0 + 1
             self.fields['ext'] = self.ext.split('.')[1]
@@ -105,7 +111,7 @@ class RegisterVersion(tank.platform.Application):
             shutil.copyfile(source_path, dest_path)
             data = { 'project': self.ctx.project,
                  'code':  os.path.basename(dest_path),
-                 'description': 'Playblast published',
+                 'description': 'Version registered',
                  'sg_path_to_movie': dest_path,
                  'sg_status_list': '',
                  'entity': self.ctx.entity,
