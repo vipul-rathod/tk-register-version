@@ -27,7 +27,8 @@ class RegisterVersion(tank.platform.Application):
         else:
             self.asset_name = self.ctx.entity["name"]
         self.asset = self.ctx.entity["name"]
-        self.asset_type = self.tk.shotgun.find_one("Asset", filters = [["code", "is", self.asset]], fields= ["sg_asset_type"])["sg_asset_type"]
+        self.entity_type = self.ctx.entity['type']
+        self.asset_type = self.tk.shotgun.find_one(self.entity_type, filters = [["code", "is", self.asset]], fields= ["sg_asset_type"])["sg_asset_type"]
         self.task = self.ctx.task["name"]
         self.step = self.ctx.step["name"]
         self.step_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['short_name'])['short_name']
@@ -74,7 +75,6 @@ class RegisterVersion(tank.platform.Application):
         list_files = self.listFilesWithParticularExtensions(self.file_path, self.asset_name, self.ext)
         if list_files:
             latest_file = max(list_files)
-#             self.version = int(latest_file.split(self.ext)[0].split('.v')[1])
             self.fields = {}
             self.fields["Asset"] = self.asset
             self.fields["sg_asset_type"] = self.asset_type
@@ -122,6 +122,9 @@ class RegisterVersion(tank.platform.Application):
             QtGui.QMessageBox.information(self.win, 'Version registered', 'Version created and uploaded on shotgun', QtGui.QMessageBox.Ok)
         else:
             QtGui.QMessageBox.warning(self.win, 'Warning', 'No Input given for uploading.\nLoad file first to version up', QtGui.QMessageBox.Ok)
+
+#     def publish_mb_file(self):
+        
 
 class Window(QtGui.QDialog):
 
