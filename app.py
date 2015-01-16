@@ -51,8 +51,12 @@ class RegisterVersion(tank.platform.Application):
         self.win.asset_type_field.setText(str(self.asset_type))
         self.win.asset_field.setText(str(self.asset))
         self.win.task_field.setText(str(self.step_name))
-        self.win.loadfile_button.released.connect(self.load_file)
-        self.win.versionUpFile_button.released.connect(self.publish_version)
+#         self.win.connect(self.win.trg_file_txt, QtCore.SIGNAL('clicked()'), self.trg_label_clicked)
+        self.win.trg_file_txt.released.connect(self.trg_version_label_clicked)
+        self.win.trg_publish_file_txt.released.connect(self.trg_publish_label_clicked)
+        self.win.loadVersionFile_button.released.connect(self.load_version_file)
+        self.win.loadPublishFile_button.released.connect(self.load_publish_file)
+        self.win.versionUpFile_button.released.connect(self.publish_version_fn)
         self.win.publishFile_button.released.connect(self.publish_file_fn)
         if self.app_name:
             for each in sorted(self.app_name):
@@ -62,10 +66,22 @@ class RegisterVersion(tank.platform.Application):
         else:
             QtGui.QMessageBox.warning(self.win, 'Warning', 'sg_apps_used field is empty.\nPlease specify the application used for the selected task', QtGui.QMessageBox.Ok)
 
-    def load_file(self):
-        self.fileDialog = QtGui.QFileDialog.getOpenFileName(self.win, 'Publish File','/home')
-        self.ext = os.path.splitext(self.fileDialog[0])[1]
-        self.win.src_file_field.setText(str(self.fileDialog[0]))
+    def trg_version_label_clicked(self):
+        subprocess.check_call(['explorer', self.file_path])
+
+    def trg_publish_label_clicked(self):
+        subprocess.check_call(['explorer', self.publish_path])
+
+    def load_version_file(self):
+        self.versionFileDialog = QtGui.QFileDialog.getOpenFileName(self.win, 'Version File','/home')
+        self.load_version_file_fn()
+
+    def load_publish_file(self):
+        self.publishFileDialog = QtGui.QFileDialog.getOpenFileName(self.win, 'Publish File','/home')
+        self.load_publish_file_fn()
+
+    def load_version_file_fn(self):
+        self.ext = os.path.splitext(self.versionFileDialog[0])[1]
         self.fields = {}
         self.fields["Asset"] = self.asset
         self.fields["sg_asset_type"] = self.asset_type
@@ -74,12 +90,14 @@ class RegisterVersion(tank.platform.Application):
         self.fields["version"] = 1
         self.fields['ext'] = self.ext.split('.')[1]
         self.path = self.template_path.apply_fields(self.fields)
+        self.win.trg_file_field.setText(str("Vipul"))
         self.baseName = os.path.basename(self.path)
         self.file_path = self.path.split(self.baseName)[0]
         if os.path.exists(self.file_path):
             pass
         else:
             os.makedirs(self.file_path)
+        self.win.trg_file_field.setText(str("Vipul"))
         list_files = self.listFilesWithParticularExtensions(self.file_path, self.asset_name, self.ext)
         if list_files:
             latest_file = max(list_files)
@@ -106,6 +124,8 @@ class RegisterVersion(tank.platform.Application):
 #             self.win.version_field.setText(str(self.fields['version']))
             self.win.trg_file_field.setText(str(self.path))
 
+    def load_publish_file_fn(self):
+        self.ext = os.path.splitext(self.publishFileDialog[0])[1]
         if self.win.apps_combobox.currentText() != "None":
             self.publish_fields={}
             self.publish_fields["Asset"] = self.asset
@@ -115,7 +135,6 @@ class RegisterVersion(tank.platform.Application):
             self.publish_fields["name"] = self.asset_name
             self.publish_fields['version'] = 1
             self.publish_fields['ext'] = self.ext.split('.')[1]
-            
             self.publish_file_path = self.publish_template_path.apply_fields(self.publish_fields)
             self.publish_baseName = os.path.basename(self.publish_file_path)
             self.publish_path = self.publish_file_path.split(self.publish_baseName)[0]
@@ -160,8 +179,9 @@ class RegisterVersion(tank.platform.Application):
         else:
             return False
     
-    def publish_version(self):
-        source_path = self.win.src_file_field.toPlainText()
+    def publish_version_fn(self):
+#         self.win.src_file_field.setText(str(self.versionFileDialog[0]))
+        source_path = self.versionFileDialog[0]
         dest_path = self.win.trg_file_field.toPlainText()
         if source_path:
             shutil.copyfile(source_path, dest_path)
@@ -176,66 +196,19 @@ class RegisterVersion(tank.platform.Application):
             create_version = self.tk.shotgun.create('Version', data)
             upload_version = self.tk.shotgun.upload('Version', create_version['id'], dest_path, 'sg_uploaded_movie')
             QtGui.QMessageBox.information(self.win, 'Version registered', 'Version created and uploaded on shotgun', QtGui.QMessageBox.Ok)
+            self.load_version_file_fn()
         else:
             QtGui.QMessageBox.warning(self.win, 'Warning', 'No Input given for uploading.\nLoad file first to version up', QtGui.QMessageBox.Ok)
 
-    def publish_file_fn(self):
-#         if self.win.apps_combobox.currentText() != "None":
-#             self.publish_fields={}
-#             self.publish_fields["Asset"] = self.asset
-#             self.publish_fields["sg_asset_type"] = self.asset_type
-#             self.publish_fields["Step"] = self.step_name
-#             self.publish_fields["apps"] = self.win.apps_combobox.currentText()
-#             self.publish_fields["name"] = self.asset_name
-#             self.publish_fields['version'] = 1
-#             self.publish_fields['ext'] = self.ext.split('.')[1]
-#             
-#             self.publish_file_path = self.publish_template_path.apply_fields(self.publish_fields)
-#             self.publish_baseName = os.path.basename(self.publish_file_path)
-#             self.publish_path = self.publish_file_path.split(self.publish_baseName)[0]
-# 
-#             if os.path.exists(self.publish_path):
-#                 pass
-#             else:
-#                 os.makedirs(self.publish_path)
-# 
-#             list_files = self.listFilesWithParticularExtensions(self.publish_path, self.asset_name, self.ext)
-#             if list_files:
-#                 latest_file = max(list_files)
-#                 self.publish_fields = {}
-#                 self.publish_fields["Asset"] = self.asset
-#                 self.publish_fields["sg_asset_type"] = self.asset_type
-#                 self.publish_fields["Step"] = self.step_name
-#                 self.publish_fields["apps"] = self.win.apps_combobox.currentText()
-#                 self.publish_fields["name"] = self.asset_name
-#                 self.publish_fields['version'] = int(latest_file.split(self.ext)[0].split('.v')[1]) + 1
-#                 self.publish_fields['ext'] = self.ext.split('.')[1]
-#                 self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
-#                 self.win.version_field.setText(str(self.publish_fields['version']))
-#                 self.win.trg_publish_file_field.setText(str(self.publish_final_path))
-#             else:
-#                 self.publish_fields = {}
-#                 self.publish_fields["Asset"] = self.asset
-#                 self.publish_fields["sg_asset_type"] = self.asset_type
-#                 self.publish_fields["Step"] = self.step_name
-#                 self.publish_fields["apps"] = self.win.apps_combobox.currentText()
-#                 self.publish_fields["name"] = self.asset_name
-#                 self.publish_fields['version'] = 0 + 1
-#                 self.publish_fields['ext'] = self.ext.split('.')[1]
-#                 self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
-#                 self.win.version_field.setText(str(self.publish_fields['version']))
-#                 self.win.trg_publish_file_field.setText(str(self.publish_final_path))
-            
-            shutil.copyfile(self.win.src_file_field.toPlainText(), self.publish_final_path)
+    def publish_file_fn(self):            
+            shutil.copyfile(self.publishFileDialog[0], self.publish_final_path)
             tank.util.register_publish(self.tk, self.ctx, self.publish_final_path, self.asset_name, self.publish_fields["version"])
-
+            self.load_publish_file_fn()
             reply = QtGui.QMessageBox.question(self.win, 'Open directory',"Do you want to open publish directory?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
             if reply == QtGui.QMessageBox.Yes:
                 subprocess.check_call(['explorer', self.publish_path])
             else:
                 pass
-#         else:
-#             QtGui.QMessageBox.warning(self.win, 'Warning', 'Please select the app from the drop box', QtGui.QMessageBox.Ok)
 
 class Window(QtGui.QDialog):
 
@@ -249,6 +222,7 @@ class Window(QtGui.QDialog):
         mainLayout = QtGui.QVBoxLayout(self)
         Layout_01 = QtGui.QGridLayout(self)
         Layout_02 = QtGui.QGridLayout(self)
+        horBoxLayout = QtGui.QHBoxLayout()
         
         #Connect the Layouts
         mainLayout.addLayout(Layout_01)
@@ -275,20 +249,21 @@ class Window(QtGui.QDialog):
 #         self.version_field = QtGui.QTextEdit()
 #         self.version_field.setMaximumSize(5000, 25)
 
-        trg_file_txt = QtGui.QLabel("Target Version Path:")
+        self.trg_file_txt = QtGui.QPushButton("Target Version Path:")
         self.trg_file_field = QtGui.QTextEdit()
         self.trg_file_field.setMaximumSize(5000, 25)
 
-        trg_publish_file_txt = QtGui.QLabel("Target Publish Path:")
+        self.trg_publish_file_txt = QtGui.QPushButton("Target Publish Path:")
         self.trg_publish_file_field = QtGui.QTextEdit()
         self.trg_publish_file_field.setMaximumSize(5000, 25)
 
-        src_file_txt = QtGui.QLabel("Source File Path:")
-        self.src_file_field = QtGui.QTextEdit()
-        self.src_file_field.setMaximumSize(5000, 25)
-        self.src_file_field.setEnabled(False)
+#         src_file_txt = QtGui.QLabel("Source File Path:")
+#         self.src_file_field = QtGui.QTextEdit()
+#         self.src_file_field.setMaximumSize(5000, 25)
+#         self.src_file_field.setEnabled(False)
 
-        self.loadfile_button = QtGui.QPushButton("Load File")
+        self.loadVersionFile_button = QtGui.QPushButton("Load Version")
+        self.loadPublishFile_button = QtGui.QPushButton("Load Publish")
 
         self.versionUpFile_button = QtGui.QPushButton("Version+")
 #         self.versionUpFile_button.released.connect(self.publish_file)
@@ -296,7 +271,6 @@ class Window(QtGui.QDialog):
         apps_txt = QtGui.QLabel("Apps Used:")
         self.apps_combobox = QtGui.QComboBox()
         self.apps_combobox.addItem("None")
-        self.src_file_field.setMaximumSize(5000, 25)
         
         self.publishFile_button = QtGui.QPushButton("Publish")
         
@@ -316,22 +290,26 @@ class Window(QtGui.QDialog):
 #         Layout_01.addWidget(version_txt, 4 , 0)
 #         Layout_01.addWidget(self.version_field, 4 , 1)
         
-        Layout_01.addWidget(trg_file_txt, 4 , 0)
+        Layout_01.addWidget(self.trg_file_txt, 4 , 0)
         Layout_01.addWidget(self.trg_file_field, 4 , 1)
 
-        Layout_01.addWidget(trg_publish_file_txt, 5 , 0)
+        Layout_01.addWidget(self.trg_publish_file_txt, 5 , 0)
         Layout_01.addWidget(self.trg_publish_file_field, 5 , 1)
         
-        Layout_01.addWidget(src_file_txt, 6 , 0)
-        Layout_01.addWidget(self.src_file_field, 6 , 1)
+#         Layout_01.addWidget(src_file_txt, 6 , 0)
+#         Layout_01.addWidget(self.src_file_field, 6 , 1)
+
+        Layout_02.addWidget(self.loadVersionFile_button, 1 ,0)
+        Layout_02.addWidget(self.versionUpFile_button, 1, 1)
+
+        horBoxLayout.addWidget(self.apps_combobox)
+        horBoxLayout.addWidget(self.loadPublishFile_button)
+        horBoxLayout.addWidget(self.publishFile_button)
         
-        Layout_02.addWidget(self.apps_combobox, 1, 0)
-        Layout_02.addWidget(self.loadfile_button, 1 ,1)
-        
-        Layout_02.addWidget(self.versionUpFile_button, 2 ,0)
-        Layout_02.addWidget(self.publishFile_button, 2, 1)
-        
+        mainLayout.addLayout(horBoxLayout)
+
         self.setWindowTitle("Register Versions on shotgun")
     
-#     def publish_file(self):
-#         print "publishing File"
+    def publish_file(self):
+        QtGui.QMessageBox.information(self, 'Version registered', 'Version created and uploaded on shotgun', QtGui.QMessageBox.Ok)
+
