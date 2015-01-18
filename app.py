@@ -14,7 +14,6 @@ import sys, os, shutil, subprocess
 class RegisterVersion(tank.platform.Application):
 
     def init_app(self):
-
         deny_permissions = self.get_setting("deny_permissions")
         deny_platforms = self.get_setting("deny_platforms")
         self.tk = self.engine._TankBundle__tk
@@ -51,7 +50,6 @@ class RegisterVersion(tank.platform.Application):
         self.win.asset_type_field.setText(str(self.asset_type))
         self.win.asset_field.setText(str(self.asset))
         self.win.task_field.setText(str(self.step_name))
-#         self.win.connect(self.win.trg_file_txt, QtCore.SIGNAL('clicked()'), self.trg_label_clicked)
         self.win.trg_file_txt.released.connect(self.trg_version_label_clicked)
         self.win.trg_publish_file_txt.released.connect(self.trg_publish_label_clicked)
         self.win.loadVersionFile_button.released.connect(self.load_version_file)
@@ -266,7 +264,6 @@ class Window(QtGui.QDialog):
         self.loadPublishFile_button = QtGui.QPushButton("Load Publish")
 
         self.versionUpFile_button = QtGui.QPushButton("Version+")
-#         self.versionUpFile_button.released.connect(self.publish_file)
         
         apps_txt = QtGui.QLabel("Apps Used:")
         self.apps_combobox = QtGui.QComboBox()
