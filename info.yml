@@ -7,6 +7,11 @@
 
 # expected fields in the configuration file for this app
 configuration:
+
+    menu_name:
+        type: str
+        description: Name to appear on the Shotgun menu.
+
     deny_permissions:
         type: list
         values: {type: shotgun_permission_group}
