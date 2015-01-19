@@ -21,14 +21,12 @@ class RegisterVersion(tank.platform.Application):
         #    Parameters for registering the app command
         deny_permissions = self.get_setting("deny_permissions")
         deny_platforms = self.get_setting("deny_platforms")
-        
         p = {
             "title": "Register Version",
             "deny_permissions": deny_permissions,
             "deny_platforms": deny_platforms,
             "supports_multiple_selection": True
         }
-
         self.engine.register_command("register_version", self.register_version, p)
        
     def register_version(self):
