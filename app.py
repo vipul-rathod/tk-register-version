@@ -189,7 +189,7 @@ class RegisterVersion(tank.platform.Application):
         reply = QtGui.QMessageBox.question(self.win, 'Confirm Publishing',"Are you sure, You want to Publish the file?", QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             shutil.copyfile(self.publishFileDialog[0], self.publish_final_path)
-            tank.util.register_publish(self.tk, self.ctx, self.publish_final_path, self.asset_name, self.publish_fields["version"])
+            tank.util.register_publish(self.tk, self.ctx, self.publish_final_path, (self.asset_name+self.step_name), self.publish_fields["version"], published_file_type="Maya Scene")
             self.load_publish_file_fn()
             QtGui.QMessageBox.information(self.win, 'Publish Finished', 'File has been published.', QtGui.QMessageBox.Ok)
         else:
