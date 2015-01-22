@@ -40,34 +40,106 @@ class RegisterVersion(tank.platform.Application):
         else:
             self.asset_name = self.ctx.entity["name"]
         self.entity_type = self.ctx.entity['type']
-        self.asset = self.ctx.entity["name"]
-        self.asset_type = self.tk.shotgun.find_one(self.entity_type, filters = [["code", "is", self.asset]], fields= ["sg_asset_type"])["sg_asset_type"]
-        self.task = self.ctx.task["name"]
-        self.step = self.ctx.step["name"]
-        self.step_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['short_name'])['short_name']
-        self.app_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s'])['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s']
-        self.template_path = self.engine.get_template_by_name("review_version_path")
-        self.publish_template_path = self.engine.get_template_by_name("app_publish_path")
+        if self.entity_type == 'Asset':
+            self.asset = self.ctx.entity["name"]
+            self.asset_type = self.tk.shotgun.find_one(self.entity_type, filters = [["code", "is", self.asset]], fields= ["sg_asset_type"])["sg_asset_type"]
+            self.task = self.ctx.task["name"]
+            self.step = self.ctx.step["name"]
+            self.step_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['short_name'])['short_name']
+            self.app_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s'])['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s']
+            self.template_path = self.engine.get_template_by_name("review_asset_version_path")
+            self.publish_template_path = self.engine.get_template_by_name("app_asset_publish_path")
+    
+            tk_register_version = self.import_module("tk_register_version")
+            self.win = tk_register_version.dialog.show_dialog(self)
+            self.win.project_field.setText(str(self.project_name))
+            self.win.asset_type_field.setText(str(self.asset_type))
+            self.win.asset_field.setText(str(self.asset))
+            self.win.task_field.setText(str(self.step_name))
+            self.win.trg_file_txt.released.connect(self.trg_version_label_clicked)
+            self.win.trg_publish_file_txt.released.connect(self.trg_publish_label_clicked)
+            self.win.loadVersionFile_button.released.connect(self.load_version_file)
+            self.win.loadPublishFile_button.released.connect(self.load_publish_file)
+            self.win.versionUpFile_button.released.connect(self.publish_version_fn)
+            self.win.publishFile_button.released.connect(self.publish_file_fn)
+            if self.app_name:
+                for each in sorted(self.app_name):
+                    self.win.apps_combobox.addItem(each["name"])
+                self.win.show()
+                self.win.exec_()
+            else:
+                QtGui.QMessageBox.warning(self.win, 'Warning', 'sg_apps_used field is empty.\nPlease specify the application used for the selected task', QtGui.QMessageBox.Ok)
+        elif self.entity_type == 'Shot':
+            self.asset = self.ctx.entity["name"]
+            self.asset_type = self.tk.shotgun.find_one(self.entity_type, filters = [["code", "is", self.asset]], fields= ["sg_sequence"])["sg_sequence"]["name"]
+            self.task = self.ctx.task["name"]
+            self.step = self.ctx.step["name"]
+            self.step_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['short_name'])['short_name']
+            self.app_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s'])['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s']
+            self.template_path = self.engine.get_template_by_name("review_shot_version_path")
+            self.publish_template_path = self.engine.get_template_by_name("app_shot_publish_path")
 
-        tk_register_version = self.import_module("tk_register_version")
-        self.win = tk_register_version.dialog.show_dialog(self)
-        self.win.project_field.setText(str(self.project_name))
-        self.win.asset_type_field.setText(str(self.asset_type))
-        self.win.asset_field.setText(str(self.asset))
-        self.win.task_field.setText(str(self.step_name))
-        self.win.trg_file_txt.released.connect(self.trg_version_label_clicked)
-        self.win.trg_publish_file_txt.released.connect(self.trg_publish_label_clicked)
-        self.win.loadVersionFile_button.released.connect(self.load_version_file)
-        self.win.loadPublishFile_button.released.connect(self.load_publish_file)
-        self.win.versionUpFile_button.released.connect(self.publish_version_fn)
-        self.win.publishFile_button.released.connect(self.publish_file_fn)
-        if self.app_name:
-            for each in sorted(self.app_name):
-                self.win.apps_combobox.addItem(each["name"])
-            self.win.show()
-            self.win.exec_()
+            tk_register_version = self.import_module("tk_register_version")
+            self.win = tk_register_version.dialog.show_dialog(self)
+            self.win.project_field.setText(str(self.project_name))
+            self.win.asset_type_txt.setText(str("Sequence:"))
+            self.win.asset_txt.setText(str("Shot:"))
+            self.win.asset_type_field.setText(str(self.asset_type)) # asset_type = Sequence
+            self.win.asset_field.setText(str(self.asset))   # asset = Shot
+            self.win.task_field.setText(str(self.step_name))
+            self.win.trg_file_txt.released.connect(self.trg_version_label_clicked)
+            self.win.trg_publish_file_txt.released.connect(self.trg_publish_label_clicked)
+            self.win.loadVersionFile_button.released.connect(self.load_version_file)
+            self.win.loadPublishFile_button.released.connect(self.load_publish_file)
+            self.win.versionUpFile_button.released.connect(self.publish_version_fn)
+            self.win.publishFile_button.released.connect(self.publish_file_fn)
+            if self.app_name:
+                for each in sorted(self.app_name):
+                    self.win.apps_combobox.addItem(each["name"])
+                self.win.show()
+                self.win.exec_()
+            else:
+                QtGui.QMessageBox.warning(self.win, 'Warning', 'sg_apps_used field is empty.\nPlease specify the application used for the selected task', QtGui.QMessageBox.Ok)
         else:
-            QtGui.QMessageBox.warning(self.win, 'Warning', 'sg_apps_used field is empty.\nPlease specify the application used for the selected task', QtGui.QMessageBox.Ok)
+            self.asset = self.ctx.entity["name"]
+            self.asset_type = self.tk.shotgun.find_one(self.entity_type, filters = [["code", "is", self.asset]], fields= ["tasks"])["tasks"][0]["name"]
+            self.task = self.ctx.task["name"]
+            self.step = self.ctx.step["name"]
+            self.step_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['short_name'])['short_name']
+            self.app_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s'])['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s']
+            self.template_path = self.engine.get_template_by_name("review_sequence_version_path")
+            self.publish_template_path = self.engine.get_template_by_name("app_sequence_publish_path")
+
+            tk_register_version = self.import_module("tk_register_version")
+            self.win = tk_register_version.dialog.show_dialog(self)
+            self.win.resize(750, 20)
+            self.win.project_field.setText(str(self.project_name))
+            self.win.asset_type_txt.setText(str("Sequence:"))
+            self.win.asset_txt.hide()
+            self.win.asset_type_field.setText(str(self.asset)) # asset_type = Sequence
+            self.win.asset_field.hide()   # asset = Shot
+            self.win.task_field.setText(str(self.step_name))
+            self.win.trg_file_txt.released.connect(self.trg_version_label_clicked)
+            self.win.trg_publish_file_txt.hide()
+            self.win.trg_publish_file_txt.hide()
+            self.win.apps_combobox.hide()
+            self.win.trg_publish_file_field.hide()
+            self.win.loadVersionFile_button.released.connect(self.load_version_file)
+            self.win.loadPublishFile_button.hide()
+            self.win.versionUpFile_button.released.connect(self.publish_version_fn)
+            self.win.publishFile_button.hide()
+
+
+#             self.win.trg_publish_file_txt.released.connect(self.trg_publish_label_clicked)
+#             self.win.loadPublishFile_button.released.connect(self.load_publish_file)
+#             self.win.publishFile_button.released.connect(self.publish_file_fn)
+#             if self.app_name:
+#                 for each in sorted(self.app_name):
+#                     self.win.apps_combobox.addItem(each["name"])
+#                 self.win.show()
+#                 self.win.exec_()
+#             else:
+#                 QtGui.QMessageBox.warning(self.win, 'Warning', 'sg_apps_used field is empty.\nPlease specify the application used for the selected task', QtGui.QMessageBox.Ok)
 
     def trg_version_label_clicked(self):
         subprocess.check_call(['explorer', self.file_path])
@@ -83,10 +155,32 @@ class RegisterVersion(tank.platform.Application):
         self.publishFileDialog = QtGui.QFileDialog.getOpenFileName(self.win, 'Publish File','/home')
         self.load_publish_file_fn()
 
-    def fields_for_review(self, asset, asset_type, step_name, asset_name, version, ext):
+    def fields_for_review(self, entity_type, asset, asset_type, step_name, asset_name, version, ext):
+        if entity_type == "Asset":
+            fields = {}
+            fields["Asset"] = asset
+            fields["sg_asset_type"] = asset_type
+            fields["Step"] = step_name
+            fields["name"] = asset_name
+            fields["version"] = version
+            fields["date"] = time.strftime("%y%m%d")
+            fields['ext'] = ext.split('.')[1]
+            return fields
+        elif entity_type == "Shot":
+            fields = {}
+            fields["Shot"] = asset
+            fields["Sequence"] = asset_type
+            fields["Step"] = step_name
+            fields["name"] = asset_name
+            fields["version"] = version
+            fields["date"] = time.strftime("%y%m%d")
+            fields['ext'] = ext.split('.')[1]
+            return fields            
+
+    def sequence_fields_for_review(self, asset, step_name, asset_name, version, ext):
         fields = {}
-        fields["Asset"] = asset
-        fields["sg_asset_type"] = asset_type
+        fields["Sequence"] = asset
+#         fields["Sequence"] = asset_type
         fields["Step"] = step_name
         fields["name"] = asset_name
         fields["version"] = version
@@ -96,7 +190,10 @@ class RegisterVersion(tank.platform.Application):
 
     def load_version_file_fn(self):
         self.ext = os.path.splitext(self.versionFileDialog[0])[1]
-        self.fields = self.fields_for_review(self.asset, self.asset_type, self.step_name, self.asset_name, 1, self.ext)
+        if self.entity_type != 'Sequence':
+            self.fields = self.fields_for_review(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, 1, self.ext)
+        else:
+            self.fields = self.sequence_fields_for_review(self.asset, self.step_name, self.asset_name, 1, self.ext)
         self.path = self.template_path.apply_fields(self.fields)
         self.baseName = os.path.basename(self.path)
         self.file_path = self.path.split(self.baseName)[0]
@@ -108,30 +205,47 @@ class RegisterVersion(tank.platform.Application):
         if list_files:
             latest_file = max(list_files)
             version = int(latest_file.split(self.ext)[0].split('.v')[1]) + 1
-            self.fields = self.fields_for_review(self.asset, self.asset_type, self.step_name, self.asset_name, version, self.ext)
+            if self.entity_type != 'Sequence':
+                self.fields = self.fields_for_review(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, version, self.ext)
+            else:
+                self.fields = self.sequence_fields_for_review(self.asset, self.step_name, self.asset_name, 1, self.ext)
             self.path = self.template_path.apply_fields(self.fields)
             self.win.trg_file_field.setText(str(self.path))
         else:
-            self.fields = self.fields_for_review(self.asset, self.asset_type, self.step_name, self.asset_name, 1, self.ext)
+            if self.entity_type != 'Sequence':
+                self.fields = self.fields_for_review(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, 1, self.ext)
+            else:
+                self.fields = self.sequence_fields_for_review(self.asset, self.step_name, self.asset_name, 1, self.ext)
             self.path = self.template_path.apply_fields(self.fields)
             self.win.trg_file_field.setText(str(self.path))
 
-    def fields_for_publish(self, asset, asset_type, step_name, asset_name, version, apps, ext):
-        publish_fields={}
-        publish_fields["Asset"] = asset
-        publish_fields["sg_asset_type"] = asset_type
-        publish_fields["Step"] = step_name
-        publish_fields["apps"] = apps
-        publish_fields["name"] = asset_name
-        publish_fields['version'] = version
-        publish_fields['ext'] = ext.split('.')[1]
-        return publish_fields
+    def fields_for_publish(self, entity_type, asset, asset_type, step_name, asset_name, version, apps, ext):
+        if entity_type == "Asset":
+            publish_fields={}
+            publish_fields["Asset"] = asset
+            publish_fields["sg_asset_type"] = asset_type
+            publish_fields["Step"] = step_name
+            publish_fields["apps"] = apps
+            publish_fields["name"] = asset_name
+            publish_fields['version'] = version
+            publish_fields['ext'] = ext.split('.')[1]
+            return publish_fields
+        elif entity_type == "Shot":
+            publish_fields={}
+            publish_fields["Shot"] = asset
+            publish_fields["Sequence"] = asset_type
+            publish_fields["Step"] = step_name
+            publish_fields["apps"] = apps
+            publish_fields["name"] = asset_name
+            publish_fields['version'] = version
+            publish_fields['ext'] = ext.split('.')[1]
+            return publish_fields
 
     def load_publish_file_fn(self):
         self.ext = os.path.splitext(self.publishFileDialog[0])[1]
         if self.win.apps_combobox.currentText() != "None":
             apps = self.win.apps_combobox.currentText()
-            self.publish_fields = self.fields_for_publish(self.asset, self.asset_type, self.step_name, self.asset_name, 1, apps, self.ext)
+            self.publish_fields = self.fields_for_publish(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, 1, apps, self.ext)
             self.publish_file_path = self.publish_template_path.apply_fields(self.publish_fields)
             self.publish_baseName = os.path.basename(self.publish_file_path)
             self.publish_path = self.publish_file_path.split(self.publish_baseName)[0]
@@ -146,16 +260,17 @@ class RegisterVersion(tank.platform.Application):
                 latest_file = max(list_files)
                 apps = self.win.apps_combobox.currentText()
                 version = int(latest_file.split(self.ext)[0].split('.v')[1]) + 1
-                self.publish_fields = self.fields_for_publish(self.asset, self.asset_type, self.step_name, self.asset_name, version, apps, self.ext)
+                self.publish_fields = self.fields_for_publish(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, version, apps, self.ext)
                 self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
                 self.win.trg_publish_file_field.setText(str(self.publish_final_path))
             else:
                 apps = self.win.apps_combobox.currentText()
-                self.publish_fields = self.fields_for_publish(self.asset, self.asset_type, self.step_name, self.asset_name, 1, apps, self.ext)
+                self.publish_fields = self.fields_for_publish(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, 1, apps, self.ext)
                 self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
                 self.win.trg_publish_file_field.setText(str(self.publish_final_path))
         else:
             QtGui.QMessageBox.warning(self.win, 'Warning', 'Please select the app from the drop box', QtGui.QMessageBox.Ok)
+
     def listFilesWithParticularExtensions(self, file_path, file_prefix, ext):
         files = [ f for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path,f)) and f.startswith('%s' % file_prefix) and f.endswith(ext) and f.__contains__('.v')]
         if files:

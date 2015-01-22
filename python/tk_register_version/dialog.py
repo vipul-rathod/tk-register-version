@@ -20,7 +20,7 @@ class Window(QtGui.QDialog):
         super(Window, self).__init__(parent)
         
         #Custom code here
-        self.resize(600,100)
+        self.resize(750,100)
         
         #Creating Layout
         mainLayout = QtGui.QVBoxLayout(self)
@@ -33,19 +33,19 @@ class Window(QtGui.QDialog):
         mainLayout.addLayout(Layout_02)
         
         #Widgets
-        project_txt = QtGui.QLabel("Project:")
+        self.project_txt = QtGui.QLabel("Project:")
         self.project_field = QtGui.QTextEdit()
         self.project_field.setMaximumSize(5000, 25)
 
-        aseet_type_txt = QtGui.QLabel("Asset Type:")
+        self.asset_type_txt = QtGui.QLabel("Asset Type:")
         self.asset_type_field = QtGui.QTextEdit()
         self.asset_type_field.setMaximumSize(5000, 25)
 
-        aseet_txt = QtGui.QLabel("Asset:")
+        self.asset_txt = QtGui.QLabel("Asset:")
         self.asset_field = QtGui.QTextEdit()
         self.asset_field.setMaximumSize(5000, 25)
 
-        task_txt = QtGui.QLabel("Task:")
+        self.task_txt = QtGui.QLabel("Task:")
         self.task_field = QtGui.QTextEdit()
         self.task_field.setMaximumSize(5000, 25)
 
@@ -62,23 +62,23 @@ class Window(QtGui.QDialog):
 
         self.versionUpFile_button = QtGui.QPushButton("Version+")
         
-        apps_txt = QtGui.QLabel("Apps Used:")
+        self.apps_txt = QtGui.QLabel("Apps Used:")
         self.apps_combobox = QtGui.QComboBox()
         self.apps_combobox.addItem("None")
         
         self.publishFile_button = QtGui.QPushButton("Publish")
         
         #adding widgets
-        Layout_01.addWidget(project_txt, 0, 0)
+        Layout_01.addWidget(self.project_txt, 0, 0)
         Layout_01.addWidget(self.project_field, 0 , 1)
 
-        Layout_01.addWidget(aseet_type_txt, 1 , 0)
+        Layout_01.addWidget(self.asset_type_txt, 1 , 0)
         Layout_01.addWidget(self.asset_type_field, 1 , 1)
 
-        Layout_01.addWidget(aseet_txt, 2 , 0)
+        Layout_01.addWidget(self.asset_txt, 2 , 0)
         Layout_01.addWidget(self.asset_field, 2 , 1)
         
-        Layout_01.addWidget(task_txt, 3 , 0)
+        Layout_01.addWidget(self.task_txt, 3 , 0)
         Layout_01.addWidget(self.task_field, 3 , 1)
                 
         Layout_01.addWidget(self.trg_file_txt, 4 , 0)
