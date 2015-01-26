@@ -78,6 +78,7 @@ class RegisterVersion(tank.platform.Application):
             self.app_name = self.tk.shotgun.find_one('Step', filters = [['code', 'is', self.step]], fields = ['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s'])['custom_non_project_entity02_sg_apps_used_custom_non_project_entity02s']
             self.template_path = self.engine.get_template_by_name("review_shot_version_path")
             self.publish_template_path = self.engine.get_template_by_name("app_shot_publish_path")
+            self.publish_comp_template = self.engine.get_template_by_name("app_comp_publish_path")
 
             tk_register_version = self.import_module("tk_register_version")
             self.win = tk_register_version.dialog.show_dialog(self)
@@ -246,9 +247,14 @@ class RegisterVersion(tank.platform.Application):
         if self.win.apps_combobox.currentText() != "None":
             apps = self.win.apps_combobox.currentText()
             self.publish_fields = self.fields_for_publish(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, 1, apps, self.ext)
-            self.publish_file_path = self.publish_template_path.apply_fields(self.publish_fields)
-            self.publish_baseName = os.path.basename(self.publish_file_path)
-            self.publish_path = self.publish_file_path.split(self.publish_baseName)[0]
+            if self.step_name == 'Comp':
+                self.publish_file_path = self.publish_comp_template.apply_fields(self.publish_fields)
+                self.publish_baseName = os.path.basename(self.publish_file_path)
+                self.publish_path = self.publish_file_path.split(self.publish_baseName)[0]
+            else:
+                self.publish_file_path = self.publish_template_path.apply_fields(self.publish_fields)
+                self.publish_baseName = os.path.basename(self.publish_file_path)
+                self.publish_path = self.publish_file_path.split(self.publish_baseName)[0]
 
             if os.path.exists(self.publish_path):
                 pass
@@ -261,13 +267,22 @@ class RegisterVersion(tank.platform.Application):
                 apps = self.win.apps_combobox.currentText()
                 version = int(latest_file.split(self.ext)[0].split('.v')[1]) + 1
                 self.publish_fields = self.fields_for_publish(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, version, apps, self.ext)
-                self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
-                self.win.trg_publish_file_field.setText(str(self.publish_final_path))
+                if self.step_name == 'Comp':
+                    self.publish_final_path = self.publish_comp_template.apply_fields(self.publish_fields)
+                    self.win.trg_publish_file_field.setText(str(self.publish_final_path))
+                else:
+                    self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
+                    self.win.trg_publish_file_field.setText(str(self.publish_final_path))
             else:
                 apps = self.win.apps_combobox.currentText()
                 self.publish_fields = self.fields_for_publish(self.entity_type, self.asset, self.asset_type, self.step_name, self.asset_name, 1, apps, self.ext)
-                self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
-                self.win.trg_publish_file_field.setText(str(self.publish_final_path))
+                if self.step_name == 'Comp':
+                    self.win.trg_publish_file_field.setText(str(self.publish_fields))
+                    self.publish_final_path = self.publish_comp_template.apply_fields(self.publish_fields)
+                    self.win.trg_publish_file_field.setText(str(self.publish_final_path))
+                else:
+                    self.publish_final_path = self.publish_template_path.apply_fields(self.publish_fields)
+                    self.win.trg_publish_file_field.setText(str(self.publish_final_path))
         else:
             QtGui.QMessageBox.warning(self.win, 'Warning', 'Please select the app from the drop box', QtGui.QMessageBox.Ok)
 
